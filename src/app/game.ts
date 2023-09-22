@@ -11,7 +11,7 @@ export type WorldStats = z.infer<typeof worldStasSchema>;
 
 // Machines
 
-const machineTypeSchema = z.union([
+export const machineTypeSchema = z.union([
   z.literal("drillT1"),
   z.literal("windTurbine"),
   z.literal("solarPanelT1"),
@@ -22,6 +22,16 @@ export const machineSchema = z.object({
   type: machineTypeSchema,
   id: z.string().uuid(),
 });
+export const allMachines: MachineType[] = Object.values(
+  machineTypeSchema.options
+).map((x) => x.value);
+
+export const availableMachines = (worldStats: WorldStats): MachineType[] => {
+  return allMachines.filter((m) => {
+    const unlock = machineDef[m].unlockAt;
+    return unlock ? fullfillRequirement(unlock, worldStats) : true;
+  });
+};
 
 export type Machine = z.infer<typeof machineSchema>;
 
@@ -41,17 +51,15 @@ export const exampleMachines: Machine[] =
 
 // Machines logic
 
-type UnlockRequirement = "terraform" | "heat" | "pressure" | "oxygen";
+type UnlockRequirementType = "terraform" | "heat" | "pressure" | "oxygen";
 
-type MachineDef = {
+type UnlockRequirement = { type: UnlockRequirementType; amount: number };
+export type MachineDef = {
   production: Production;
-  unlockAt?: {
-    type: UnlockRequirement;
-    amount: number;
-  };
+  unlockAt?: UnlockRequirement;
 };
 
-const machineDef: Record<MachineType, MachineDef> = {
+export const machineDef: Record<MachineType, MachineDef> = {
   drillT1: {
     production: {
       energy: -5,
@@ -77,6 +85,16 @@ const machineDef: Record<MachineType, MachineDef> = {
     },
     unlockAt: { type: "terraform", amount: 1000 },
   },
+};
+
+export const terraformValue = (worldStats: WorldStats): number =>
+  worldStats.pressure + worldStats.heat + worldStats.oxygen;
+
+export const fullfillRequirement = (
+  { amount, type }: UnlockRequirement,
+  stats: WorldStats
+): boolean => {
+  return { ...stats, terraform: terraformValue(stats) }[type] >= amount;
 };
 
 type Production = {

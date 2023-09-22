@@ -4,6 +4,7 @@ import { useAppSelector, useAppDispatch } from "./hooks";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import { addMachine, loadGame, saveGame, tick } from "./store/gameState";
+import MachineSelector from "./features/machines/machineSelector";
 
 export default function Home() {
   return (
@@ -15,7 +16,7 @@ export default function Home() {
 
 function GameComponent() {
   const { worldStats, turn, machines } = useAppSelector((s) => s.gameState);
-  const terraform = worldStats.pressure + worldStats.heat + worldStats.oxygen;
+  const terraform = G.terraformValue(worldStats);
   const { energy, pressure, heat, oxygen } = G.production(machines);
   const dispatch = useAppDispatch();
   return (
@@ -25,6 +26,7 @@ function GameComponent() {
         <button onClick={() => dispatch(tick())}>Tick</button>
         <button onClick={() => dispatch(saveGame())}>Save State</button>
         <button onClick={() => dispatch(loadGame())}>Load State</button>
+        <MachineSelector />
         <button onClick={() => dispatch(addMachine("windTurbine"))}>
           Add Wind Turbine
         </button>
